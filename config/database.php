@@ -1,9 +1,8 @@
 <?php
-// Αρχείο: config/database.php
 // Αυτο το αρχείο παρέχει τη δυνατότητα σύνδεσης της εφαρμογής με τη βάση δεδομένων
 class Database {
     private $host = 'localhost';
-    private $db_name = 'accident_records';
+    private $db_name = 'accidents';
     private $username = 'root';
     private $password = '';
     public $conn;
