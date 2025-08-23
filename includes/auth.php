@@ -53,7 +53,7 @@ class Auth {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$user['is_active']) {
-                    return ['success' => false, 'message' => 'Account is suspended'];
+                    return ['success' => false, 'message' => 'Ο λογαριασμός είναι απενεργοποιημένος'];
                 }
 
                 if (password_verify($password, $user['password'])) {
@@ -62,12 +62,12 @@ class Auth {
                     $_SESSION['email'] = $user['email'];
                     $_SESSION['role'] = $user['role'];
 
-                    return ['success' => true, 'message' => 'Login successful', 'redirect' => $this->getDashboardUrl($user['role'])];
+                    return ['success' => true, 'message' => 'Επιτυχής είσοδος', 'redirect' => $this->getDashboardUrl($user['role'])];
                 } else {
-                    return ['success' => false, 'message' => 'Invalid password'];
+                    return ['success' => false, 'message' => 'Λάθος κωδικός πρόσβασης'];
                 }
             } else {
-                return ['success' => false, 'message' => 'User not found'];
+                return ['success' => false, 'message' => 'Ο χρήστης δεν βρέθηκε'];
             }
 
         } catch(PDOException $exception) {
@@ -99,13 +99,13 @@ class Auth {
         $required_level = $roles_hierarchy[$required_role] ?? 999;
 
         if ($user_level < $required_level) {
-            header("Location: ../dashboard/" . $_SESSION['role'] . "Review.php");
+            header("Location: ../dashboard/" . $_SESSION['role'] . ".php");
             exit();
         }
     }
 
     private function getDashboardUrl($role) {
-        return "../dashboard/{$role}Review.php";
+        return "../dashboard/{$role}.php";
     }
 
     public function getCurrentUser() {
@@ -120,4 +120,3 @@ class Auth {
         return null;
     }
 }
-?>
