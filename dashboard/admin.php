@@ -1,5 +1,5 @@
 <?php
-// dashboard/admin.php
+// dashboard/admin.php - UPDATED VERSION
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/functions.php';
@@ -146,7 +146,7 @@ try {
         .dashboard-header {
             margin-bottom: 2rem;
             padding-bottom: 1rem;
-            border-bottom: 3px solid #3498db;
+            border-bottom: 3px solid #e74c3c;
         }
 
         .dashboard-header h1 {
@@ -161,6 +161,44 @@ try {
             font-size: 1.1rem;
         }
 
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .quick-action-card {
+            background: white;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid #e74c3c;
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .quick-action-card .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #e74c3c;
+        }
+
+        .quick-action-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .quick-action-card p {
+            color: #7f8c8d;
+            margin-bottom: 1.5rem;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -171,7 +209,6 @@ try {
         .stat-card {
             background: white;
             padding: 2rem;
-            border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             border-left: 4px solid transparent;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -217,7 +254,6 @@ try {
 
         .main-content {
             background: white;
-            border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             overflow: hidden;
         }
@@ -249,7 +285,7 @@ try {
 
         .tab-button.active {
             color: #2c3e50;
-            border-bottom-color: #3498db;
+            border-bottom-color: #e74c3c;
             background-color: white;
         }
 
@@ -276,7 +312,6 @@ try {
         .btn {
             padding: 0.875rem 1.75rem;
             border: none;
-            border-radius: 8px;
             font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
@@ -334,6 +369,11 @@ try {
             color: white;
         }
 
+        .btn-lg {
+            padding: 1.25rem 2.5rem;
+            font-size: 1.1rem;
+        }
+
         .btn-outline {
             background-color: transparent;
             border: 2px solid currentColor;
@@ -346,7 +386,6 @@ try {
 
         .table-container {
             overflow-x: auto;
-            border-radius: 8px;
             border: 1px solid #e9ecef;
         }
 
@@ -389,7 +428,6 @@ try {
         .action-links a,
         .action-links button {
             padding: 0.375rem 0.75rem;
-            border-radius: 6px;
             text-decoration: none;
             font-size: 0.8rem;
             font-weight: 500;
@@ -423,155 +461,9 @@ try {
             color: white;
         }
 
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .filter-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .filter-group select,
-        .filter-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #bdc3c7;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            background-color: white;
-            transition: border-color 0.3s ease;
-        }
-
-        .filter-group select:focus,
-        .filter-group input:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(44, 62, 80, 0.8);
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            margin: 5% auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: modalSlideIn 0.3s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            padding: 2rem 2rem 1rem;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            color: #2c3e50;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #7f8c8d;
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: all 0.2s ease;
-        }
-
-        .close-modal:hover {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .modal-body {
-            padding: 2rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .form-group select,
-        .form-group textarea,
-        .form-group input {
-            width: 100%;
-            padding: 0.875rem;
-            border: 1px solid #bdc3c7;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group select:focus,
-        .form-group textarea:focus,
-        .form-group input:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .modal-footer {
-            padding: 1rem 2rem 2rem;
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-
         .alert {
             padding: 1rem 1.25rem;
             margin-bottom: 1.5rem;
-            border-radius: 8px;
             font-weight: 500;
             border-left: 4px solid transparent;
         }
@@ -591,7 +483,6 @@ try {
         .chart-container {
             background: white;
             padding: 2rem;
-            border-radius: 8px;
             margin-bottom: 2rem;
             border: 1px solid #e9ecef;
         }
@@ -610,18 +501,14 @@ try {
             justify-content: center;
             color: #7f8c8d;
             background-color: #f8f9fa;
-            border-radius: 6px;
             border: 2px dashed #bdc3c7;
         }
 
         /* Responsive Design */
         @media (max-width: 1024px) {
-            .stats-grid {
+            .stats-grid,
+            .quick-actions {
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            }
-
-            .filters {
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             }
         }
 
@@ -646,12 +533,14 @@ try {
                 font-size: 2rem;
             }
 
-            .stats-grid {
+            .stats-grid,
+            .quick-actions {
                 grid-template-columns: 1fr;
                 gap: 1rem;
             }
 
-            .stat-card {
+            .stat-card,
+            .quick-action-card {
                 padding: 1.5rem;
             }
 
@@ -670,22 +559,6 @@ try {
 
             .action-buttons {
                 flex-direction: column;
-            }
-
-            .filters {
-                grid-template-columns: 1fr;
-                padding: 1rem;
-            }
-
-            .modal-content {
-                width: 95%;
-                margin: 2% auto;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 1rem;
             }
 
             .table-container {
@@ -723,7 +596,7 @@ try {
     <div class="navbar-brand">Σύστημα Καταγραφής Ατυχημάτων</div>
     <div class="navbar-user">
         <span>Καλώς ήρθατε, <strong><?php echo htmlspecialchars($current_user['username']); ?></strong></span>
-        <span class="badge <?php echo getRoleBadgeClass($current_user['role']); ?>"><?php echo ucfirst($current_user['role']); ?></span>
+        <span class="badge badge-danger">Διαχειριστής</span>
         <a href="../auth/logout.php" class="btn btn-danger">Αποσύνδεση</a>
     </div>
 </nav>
@@ -736,6 +609,37 @@ try {
     <div class="dashboard-header">
         <h1>Πίνακας Ελέγχου Διαχειριστή</h1>
         <p>Διαχείριση συστήματος, χρηστών και εποπτεία</p>
+    </div>
+
+    <!-- ADDED: Quick Actions for Admin including Accident Creation -->
+    <div class="quick-actions">
+        <div class="quick-action-card">
+            <div class="icon">📝</div>
+            <h3>Νέο Ατύχημα</h3>
+            <p>Δημιουργήστε μια νέα εγγραφή ατυχήματος ως διαχειριστής</p>
+            <a href="../accidents/create.php" class="btn btn-primary btn-lg">Έναρξη Καταχώρησης</a>
+        </div>
+
+        <div class="quick-action-card">
+            <div class="icon">👥</div>
+            <h3>Διαχείριση Χρηστών</h3>
+            <p>Δημιουργία, επεξεργασία και διαχείριση χρηστών συστήματος</p>
+            <a href="../admin/users/list.php" class="btn btn-primary btn-lg">Διαχείριση Χρηστών</a>
+        </div>
+
+        <div class="quick-action-card">
+            <div class="icon">📊</div>
+            <h3>Αναφορές & Στατιστικά</h3>
+            <p>Δημιουργία αναφορών και προβολή στατιστικών συστήματος</p>
+            <a href="../admin/reports/analytics.php" class="btn btn-primary btn-lg">Προβολή Αναφορών</a>
+        </div>
+
+        <div class="quick-action-card">
+            <div class="icon">🔧</div>
+            <h3>Ρυθμίσεις Συστήματος</h3>
+            <p>Διαμόρφωση και συντήρηση συστήματος</p>
+            <a href="../admin/system/settings.php" class="btn btn-primary btn-lg">Ρυθμίσεις</a>
+        </div>
     </div>
 
     <div class="stats-grid">
@@ -828,34 +732,10 @@ try {
 
             <div id="users" class="tab-pane">
                 <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="openModal('add-user-modal')">
-                        + Προσθήκη Νέου Χρήστη
-                    </button>
+                    <a href="../admin/users/list.php" class="btn btn-primary">
+                        👥 Πλήρης Διαχείριση Χρηστών
+                    </a>
                     <button class="btn btn-success btn-outline">Εξαγωγή Λίστας Χρηστών</button>
-                </div>
-
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Ρόλος</label>
-                        <select id="user-role-filter">
-                            <option value="">Όλοι οι Ρόλοι</option>
-                            <option value="registrar">Καταχωρητής</option>
-                            <option value="expert">Εμπειρογνώμονας</option>
-                            <option value="admin">Διαχειριστής</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Κατάσταση</label>
-                        <select id="user-status-filter">
-                            <option value="">Όλες οι Καταστάσεις</option>
-                            <option value="1">Ενεργός</option>
-                            <option value="0">Αναστολή</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Αναζήτηση</label>
-                        <input type="text" id="user-search" placeholder="Αναζήτηση χρηστών...">
-                    </div>
                 </div>
 
                 <div class="table-container">
@@ -869,80 +749,6 @@ try {
                             <th>Κατάσταση</th>
                             <th>Εγγραφή</th>
                             <th>Τελευταία Σύνδεση</th>
-                            <th>Ενέργειες</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php if (!empty($recent_users)): ?>
-                            <?php foreach ($recent_users as $user): ?>
-                                <tr>
-                                    <td>#<?php echo str_pad($user['id'], 3, '0', STR_PAD_LEFT); ?></td>
-                                    <td><?php echo htmlspecialchars($user['username']); ?></td>
-                                    <td><?php echo htmlspecialchars($user['email']); ?></td>
-                                    <td><span class="badge <?php echo getRoleBadgeClass($user['role']); ?>"><?php echo ucfirst($user['role']); ?></span></td>
-                                    <td><span class="badge <?php echo $user['is_active'] ? 'badge-success' : 'badge-secondary'; ?>"><?php echo $user['is_active'] ? 'Ενεργός' : 'Αναστολή'; ?></span></td>
-                                    <td><?php echo formatDate($user['created_at'], 'd/m/Y'); ?></td>
-                                    <td><?php echo $user['last_login'] ? timeAgo($user['last_login']) : 'Ποτέ'; ?></td>
-                                    <td>
-                                        <div class="action-links">
-                                            <a href="../admin/users/edit.php?id=<?php echo $user['id']; ?>" class="action-view">Προβολή</a>
-                                            <a href="../admin/users/edit.php?id=<?php echo $user['id']; ?>" class="action-edit">Επεξεργασία</a>
-                                            <?php if ($user['id'] != $current_user['id']): ?>
-                                                <button class="action-warn" onclick="openActionModal('warn', '<?php echo htmlspecialchars($user['username']); ?>', <?php echo $user['id']; ?>)">Προειδοποίηση</button>
-                                                <button class="action-suspend" onclick="openActionModal('suspend', '<?php echo htmlspecialchars($user['username']); ?>', <?php echo $user['id']; ?>)">Αναστολή</button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="8" style="text-align: center; color: #7f8c8d;">Δεν βρέθηκαν χρήστες</td>
-                            </tr>
-                        <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="accidents" class="tab-pane">
-                <div class="action-buttons">
-                    <button class="btn btn-danger" onclick="deleteSelected()">Διαγραφή Επιλεγμένων</button>
-                    <button class="btn btn-warning">Μαζικές Ενέργειες</button>
-                    <button class="btn btn-primary">Εξαγωγή Δεδομένων</button>
-                </div>
-
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Κατάσταση</label>
-                        <select id="accident-status-filter">
-                            <option value="">Όλες οι Καταστάσεις</option>
-                            <option value="draft">Πρόχειρο</option>
-                            <option value="complete">Ολοκληρώθηκε</option>
-                            <option value="flagged">Σημειωμένο</option>
-                            <option value="under_review">Υπό Αξιολόγηση</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Ημερομηνία Από</label>
-                        <input type="date" id="accident-date-from">
-                    </div>
-                    <div class="filter-group">
-                        <label>Ημερομηνία Έως</label>
-                        <input type="date" id="accident-date-to">
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                        <tr>
-                            <th><input type="checkbox" id="select-all"></th>
-                            <th>ID</th>
-                            <th>Ημερομηνία/Ώρα</th>
-                            <th>Τοποθεσία</th>
-                            <th>Καταχωρητής</th>
-                            <th>Κατάσταση</th>
                             <th>Ενέργειες</th>
                         </tr>
                         </thead>
@@ -964,6 +770,30 @@ try {
                                         </div>
                                     </td>
                                 </tr>
+                        </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+            <div id="accidents" class="tab-pane">
+                <div class="action-buttons">
+                    <a href="../accidents/create.php" class="btn btn-success">📝 Νέο Ατύχημα</a>
+                    <a href="../accidents/list.php" class="btn btn-primary">📋 Όλες οι Εγγραφές</a>
+                    <button class="btn btn-warning">Μαζικές Ενέργειες</button>
+                    <button class="btn btn-primary btn-outline">Εξαγωγή Δεδομένων</button>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all"></th>
+                            <th>ID</th>
+                            <th>Ημερομηνία/Ώρα</th>
+                            <th>Τοποθεσία</th>
+                            <th>Καταχωρητής</th>
+                            <th>Κατάσταση</th>
+                            <th>Ενέργειες
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
@@ -1000,105 +830,36 @@ try {
                 <h3 style="margin-bottom: 2rem; color: #2c3e50;">Διαμόρφωση Συστήματος</h3>
 
                 <form id="system-settings-form">
-                    <div class="form-group">
-                        <label>Λειτουργία Συντήρησης Συστήματος</label>
-                        <select name="maintenance_mode">
-                            <option value="0">Απενεργοποιημένη</option>
-                            <option value="1">Ενεργοποιημένη</option>
-                        </select>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">Λειτουργία Συντήρησης Συστήματος</label>
+                            <select name="maintenance_mode" style="width: 100%; padding: 0.875rem; border: 1px solid #bdc3c7; font-size: 1rem;">
+                                <option value="0">Απενεργοποιημένη</option>
+                                <option value="1">Ενεργοποιημένη</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">Προεπιλεγμένος Ρόλος Χρήστη</label>
+                            <select name="default_role" style="width: 100%; padding: 0.875rem; border: 1px solid #bdc3c7; font-size: 1rem;">
+                                <option value="registrar">Καταχωρητής</option>
+                                <option value="expert">Εμπειρογνώμονας</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">Μέγιστο Μέγεθος Αρχείου (MB)</label>
+                            <input type="number" name="max_file_size" value="10" min="1" max="100" style="width: 100%; padding: 0.875rem; border: 1px solid #bdc3c7; font-size: 1rem;">
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Προεπιλεγμένος Ρόλος Χρήστη</label>
-                        <select name="default_role">
-                            <option value="registrar">Καταχωρητής</option>
-                            <option value="expert">Εμπειρογνώμονας</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Μέγιστο Μέγεθος Αρχείου (MB)</label>
-                        <input type="number" name="max_file_size" value="10" min="1" max="100">
-                    </div>
-
-                    <div class="action-buttons">
+                    <div class="action-buttons" style="margin-top: 2rem;">
                         <button type="submit" class="btn btn-success">Αποθήκευση Ρυθμίσεων</button>
                         <button type="button" class="btn btn-warning" onclick="backupDatabase()">Αντίγραφο Ασφαλείας</button>
                         <button type="button" class="btn btn-danger" onclick="clearCache()">Εκκαθάριση Cache</button>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add User Modal -->
-<div id="add-user-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Προσθήκη Νέου Χρήστη</h3>
-            <button class="close-modal" onclick="closeModal('add-user-modal')">&times;</button>
-        </div>
-
-        <div class="modal-body">
-            <form id="add-user-form">
-                <div class="form-group">
-                    <label for="new-username">Όνομα Χρήστη</label>
-                    <input type="text" id="new-username" name="username" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="new-email">Email</label>
-                    <input type="email" id="new-email" name="email" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="new-role">Ρόλος</label>
-                    <select id="new-role" name="role" required>
-                        <option value="registrar">Καταχωρητής</option>
-                        <option value="expert">Εμπειρογνώμονας</option>
-                        <option value="admin">Διαχειριστής</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="new-password">Προσωρινός Κωδικός</label>
-                    <input type="password" id="new-password" name="password" required>
-                </div>
-            </form>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('add-user-modal')">Ακύρωση</button>
-            <button type="submit" form="add-user-form" class="btn btn-primary">Προσθήκη Χρήστη</button>
-        </div>
-    </div>
-</div>
-
-<!-- Action Modal (Warn/Suspend) -->
-<div id="action-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="action-modal-title">Ενέργεια Χρήστη</h3>
-            <button class="close-modal" onclick="closeModal('action-modal')">&times;</button>
-        </div>
-
-        <div class="modal-body">
-            <form id="action-form">
-                <input type="hidden" id="action-type" name="action_type">
-                <input type="hidden" id="target-user-id" name="target_user_id">
-                <input type="hidden" id="target-user" name="target_user">
-
-                <div class="form-group">
-                    <label for="action-reason">Λόγος</label>
-                    <textarea id="action-reason" name="reason" placeholder="Παρακαλώ παρέχετε λόγο για αυτή την ενέργεια..." required></textarea>
-                </div>
-            </form>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('action-modal')">Ακύρωση</button>
-            <button type="submit" form="action-form" class="btn btn-danger" id="action-submit">Υποβολή</button>
         </div>
     </div>
 </div>
@@ -1117,62 +878,9 @@ try {
         event.target.classList.add('active');
     }
 
-    function openModal(modalId) {
-        document.getElementById(modalId).style.display = 'block';
-    }
-
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-        if (modalId === 'add-user-modal') {
-            document.getElementById('add-user-form').reset();
-        }
-        if (modalId === 'action-modal') {
-            document.getElementById('action-form').reset();
-        }
-    }
-
-    function openActionModal(actionType, username, userId) {
-        const modal = document.getElementById('action-modal');
-        const title = document.getElementById('action-modal-title');
-        const actionTypeField = document.getElementById('action-type');
-        const targetUserField = document.getElementById('target-user');
-        const targetUserIdField = document.getElementById('target-user-id');
-        const submitBtn = document.getElementById('action-submit');
-
-        actionTypeField.value = actionType;
-        targetUserField.value = username;
-        targetUserIdField.value = userId;
-
-        if (actionType === 'warn') {
-            title.textContent = 'Προειδοποίηση Χρήστη: ' + username;
-            submitBtn.textContent = 'Αποστολή Προειδοποίησης';
-            submitBtn.className = 'btn btn-warning';
-        } else if (actionType === 'suspend') {
-            title.textContent = 'Αναστολή Χρήστη: ' + username;
-            submitBtn.textContent = 'Αναστολή Χρήστη';
-            submitBtn.className = 'btn btn-danger';
-        }
-
-        openModal('action-modal');
-    }
-
     function confirmDelete(type, id) {
         if (confirm(`Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το ${type}? Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.`)) {
             window.location.href = `../admin/${type}/delete.php?id=${id}`;
-        }
-    }
-
-    function deleteSelected() {
-        const checkboxes = document.querySelectorAll('input[name="accident-select"]:checked');
-        if (checkboxes.length === 0) {
-            alert('Παρακαλώ επιλέξτε τουλάχιστον μία εγγραφή για διαγραφή.');
-            return;
-        }
-
-        if (confirm(`Είστε σίγουροι ότι θέλετε να διαγράψετε ${checkboxes.length} εγγραφές? Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.`)) {
-            const ids = Array.from(checkboxes).map(cb => cb.value);
-            // Implement bulk delete functionality
-            console.log('Deleting accidents:', ids);
         }
     }
 
@@ -1184,7 +892,6 @@ try {
 
     function clearCache() {
         if (confirm('Θέλετε να εκκαθαρίσετε την cache του συστήματος;')) {
-            // Implement cache clearing functionality
             alert('Η cache εκκαθαρίστηκε επιτυχώς!');
         }
     }
@@ -1197,58 +904,7 @@ try {
         });
     });
 
-    // Form submissions
-    document.getElementById('add-user-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-
-        fetch('../admin/users/create.php', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Ο χρήστης προστέθηκε επιτυχώς!');
-                    closeModal('add-user-modal');
-                    location.reload();
-                } else {
-                    alert('Σφάλμα: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('Παρουσιάστηκε σφάλμα κατά την προσθήκη του χρήστη.');
-                console.error('Error:', error);
-            });
-    });
-
-    document.getElementById('action-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const actionType = formData.get('action_type');
-
-        const url = actionType === 'warn' ? '../admin/users/send_warning.php' : '../admin/users/suspend.php';
-
-        fetch(url, {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`Η ενέργεια "${actionType}" ολοκληρώθηκε επιτυχώς!`);
-                    closeModal('action-modal');
-                    location.reload();
-                } else {
-                    alert('Σφάλμα: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('Παρουσιάστηκε σφάλμα κατά την εκτέλεση της ενέργειας.');
-                console.error('Error:', error);
-            });
-    });
-
+    // Form submission for system settings
     document.getElementById('system-settings-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
@@ -1271,27 +927,17 @@ try {
             });
     });
 
-    // Close modals when clicking outside
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    }
-
-    // Auto-refresh stats every 30 seconds
+    // Auto-refresh stats every 60 seconds
     setInterval(function() {
-        fetch('get_stats.php')
+        fetch('../dashboard/get_stats.php')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.querySelector('#total-users').textContent = data.total_users;
-                    document.querySelector('#total-accidents').textContent = data.total_accidents;
-                    document.querySelector('#flagged-records').textContent = data.flagged_records;
-                    document.querySelector('#pending-actions').textContent = data.pending_actions;
+                    // Update stats if needed
                 }
             })
             .catch(error => console.error('Error fetching stats:', error));
-    }, 30000);
+    }, 60000);
 </script>
 </body>
 </html>
