@@ -57,15 +57,28 @@ try {
 
     // Recent accidents
     $stmt = $db->prepare("
-        SELECT a.id, a.accidentDate, a.location, a.status, u.username as registrar 
-        FROM accidents a 
-        JOIN users u ON a.user_id = u.id 
-        ORDER BY a.created_at DESC 
-        LIMIT 20
-    ");
+    SELECT a.*, u.username as registrar,
+           (SELECT COUNT(*) FROM accident_reviews WHERE accident_id = a.id) as review_count
+    FROM accidents a 
+    JOIN users u ON a.user_id = u.id 
+    ORDER BY a.created_at DESC 
+    LIMIT 50
+");
     $stmt->execute();
     $recent_accidents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Get accidents statistics for better admin overview
+    $stmt = $db->prepare("SELECT COUNT(*) as total FROM accidents WHERE status = 'draft'");
+    $stmt->execute();
+    $draft_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+    $stmt = $db->prepare("SELECT COUNT(*) as total FROM accidents WHERE status = 'complete'");
+    $stmt->execute();
+    $complete_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+    $stmt = $db->prepare("SELECT COUNT(*) as total FROM accidents WHERE status = 'under_review'");
+    $stmt->execute();
+    $under_review_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 } catch(PDOException $e) {
     $error_message = "Σφάλμα κατά την ανάκτηση δεδομένων: " . $e->getMessage();
 }
@@ -589,6 +602,98 @@ try {
                 font-size: 0.9rem;
             }
         }
+
+
+        .stats-overview {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+
+        .filter-results-info {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            color: #2c3e50;
+            font-weight: 500;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .action-links .action-view {
+            background-color: #3498db;
+            color: white;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .action-links .action-edit {
+            background-color: #f39c12;
+            color: white;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .action-links .action-delete {
+            background-color: #e74c3c;
+            color: white;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .action-links .action-view:hover {
+            background-color: #2980b9;
+        }
+
+        .action-links .action-edit:hover {
+            background-color: #e67e22;
+        }
+
+        .action-links .action-delete:hover {
+            background-color: #c0392b;
+        }
+
+        .table tbody tr[data-status="draft"] {
+            background-color: #fefefe;
+            border-left: 3px solid #95a5a6;
+        }
+
+        .table tbody tr[data-status="flagged"] {
+            background-color: #fdf2f2;
+            border-left: 3px solid #e74c3c;
+        }
+
+        .table tbody tr[data-status="under_review"] {
+            background-color: #fefbf3;
+            border-left: 3px solid #f39c12;
+        }
+
+        .table tbody tr[data-status="complete"] {
+            background-color: #f0f9ff;
+            border-left: 3px solid #27ae60;
+        }
+
+        #bulk-delete-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #selected-count {
+            font-weight: 700;
+            color: #e74c3c;
+        }
     </style>
 </head>
 <body>
@@ -725,15 +830,253 @@ try {
                                 <td colspan="4" style="text-align: center; color: #7f8c8d;">Δεν υπάρχουν πρόσφατες ενέργειες</td>
                             </tr>
                         <?php endif; ?>
+
+
                         </tbody>
                     </table>
+                </div>
+            </div>
+            <div id="accidents" class="tab-pane">
+                <div class="action-buttons">
+                    <button class="btn btn-danger" onclick="deleteSelected()" id="bulk-delete-btn" disabled>
+                        Διαγραφή Επιλεγμένων (<span id="selected-count">0</span>)
+                    </button>
+                    <button class="btn btn-warning" onclick="openModal('bulk-action-modal')">
+                        Μαζικές Ενέργειες
+                    </button>
+                    <button class="btn btn-primary" onclick="exportAccidents()">
+                        Εξαγωγή Δεδομένων
+                    </button>
+                    <button class="btn btn-success btn-outline" onclick="showStatistics()">
+                        Στατιστικά Εγγραφών
+                    </button>
+                </div>
+
+                <!-- Statistics Overview -->
+                <div class="stats-overview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; padding: 1.5rem; background-color: #f8f9fa; border-radius: 8px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #95a5a6;"><?php echo $draft_count; ?></div>
+                        <div style="color: #7f8c8d; font-size: 0.9rem;">Πρόχειρες</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #27ae60;"><?php echo $complete_count; ?></div>
+                        <div style="color: #7f8c8d; font-size: 0.9rem;">Ολοκληρωμένες</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #f39c12;"><?php echo $under_review_count; ?></div>
+                        <div style="color: #7f8c8d; font-size: 0.9rem;">Υπό Αξιολόγηση</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #e74c3c;"><?php echo $flagged_records; ?></div>
+                        <div style="color: #7f8c8d; font-size: 0.9rem;">Σημειωμένες</div>
+                    </div>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Κατάσταση</label>
+                        <select id="accident-status-filter">
+                            <option value="">Όλες οι Καταστάσεις</option>
+                            <option value="draft">Πρόχειρο</option>
+                            <option value="complete">Ολοκληρώθηκε</option>
+                            <option value="flagged">Σημειωμένο</option>
+                            <option value="under_review">Υπό Αξιολόγηση</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Καταχωρητής</label>
+                        <select id="registrar-filter">
+                            <option value="">Όλοι οι Καταχωρητές</option>
+                            <?php
+                            // Get unique registrars
+                            $stmt = $db->prepare("SELECT DISTINCT u.id, u.username FROM users u JOIN accidents a ON u.id = a.user_id ORDER BY u.username");
+                            $stmt->execute();
+                            $registrars = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                            foreach ($registrars as $registrar):
+                                ?>
+                                <option value="<?php echo $registrar['username']; ?>"><?php echo htmlspecialchars($registrar['username']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Ημερομηνία Από</label>
+                        <input type="date" id="accident-date-from">
+                    </div>
+                    <div class="filter-group">
+                        <label>Ημερομηνία Έως</label>
+                        <input type="date" id="accident-date-to">
+                    </div>
+                    <div class="filter-group">
+                        <label>Αναζήτηση</label>
+                        <input type="text" id="accident-search" placeholder="Αριθμός υπόθεσης, τοποθεσία...">
+                    </div>
+                    <div class="filter-group" style="display: flex; align-items: end;">
+                        <button type="button" class="btn btn-primary" onclick="applyAccidentFilters()">Εφαρμογή</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <?php if (!empty($recent_accidents)): ?>
+                        <table class="table" id="accidents-table">
+                            <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all-accidents"></th>
+                                <th>ID</th>
+                                <th>Αριθμός Υπόθεσης</th>
+                                <th>Ημερομηνία/Ώρα Ατυχήματος</th>
+                                <th>Τοποθεσία</th>
+                                <th>Καταχωρητής</th>
+                                <th>Κατάσταση</th>
+                                <th>Αξιολογήσεις</th>
+                                <th>Δημιουργήθηκε</th>
+                                <th>Ενέργειες</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($recent_accidents as $accident): ?>
+                                <tr data-status="<?php echo $accident['status']; ?>" data-registrar="<?php echo htmlspecialchars($accident['registrar']); ?>" data-date="<?php echo $accident['accidentDate']; ?>" data-created="<?php echo $accident['created_at']; ?>">
+                                    <td><input type="checkbox" name="accident-select" value="<?php echo $accident['id']; ?>" onchange="updateSelectedCount()"></td>
+                                    <td><strong>#<?php echo str_pad($accident['id'], 4, '0', STR_PAD_LEFT); ?></strong></td>
+                                    <td>
+                                        <?php if (!empty($accident['caseNumber'])): ?>
+                                            <strong><?php echo htmlspecialchars($accident['caseNumber']); ?></strong>
+                                        <?php else: ?>
+                                            <span style="color: #95a5a6; font-style: italic;">Δεν καθορίστηκε</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($accident['accidentDate'])): ?>
+                                            <?php echo formatDate($accident['accidentDate'], 'd/m/Y H:i'); ?>
+                                        <?php else: ?>
+                                            <span style="color: #95a5a6;">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($accident['location'])): ?>
+                                            <?php echo htmlspecialchars(substr($accident['location'], 0, 30)) . (strlen($accident['location']) > 30 ? '...' : ''); ?>
+                                        <?php else: ?>
+                                            <span style="color: #95a5a6;">Δεν καθορίστηκε</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <div style="width: 25px; height: 25px; border-radius: 50%; background-color: #3498db; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600;">
+                                                <?php echo strtoupper(substr($accident['registrar'], 0, 1)); ?>
+                                            </div>
+                                            <?php echo htmlspecialchars($accident['registrar']); ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                            <span class="badge <?php echo getStatusBadgeClass($accident['status']); ?>">
+                                <?php
+                                switch($accident['status']) {
+                                    case 'draft': echo 'Πρόχειρο'; break;
+                                    case 'complete': echo 'Ολοκληρώθηκε'; break;
+                                    case 'flagged': echo 'Σημειωμένο'; break;
+                                    case 'under_review': echo 'Υπό Αξιολόγηση'; break;
+                                    default: echo ucfirst($accident['status']);
+                                }
+                                ?>
+                            </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($accident['review_count'] > 0): ?>
+                                            <span class="badge badge-info"><?php echo $accident['review_count']; ?> Αξιολογήσεις</span>
+                                        <?php else: ?>
+                                            <span style="color: #95a5a6; font-size: 0.85rem;">Καμία</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 0.85rem; color: #7f8c8d;">
+                                            <?php echo formatDate($accident['created_at'], 'd/m/Y'); ?><br>
+                                            <small><?php echo timeAgo($accident['created_at']); ?></small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-links">
+                                            <a href="../accidents/view.php?id=<?php echo $accident['id']; ?>" class="action-view" title="Προβολή Λεπτομερειών">👁️ Προβολή</a>
+                                            <a href="../accidents/edit.php?id=<?php echo $accident['id']; ?>" class="action-edit" title="Επεξεργασία Εγγραφής">✏️ Επεξεργασία</a>
+                                            <button class="action-delete" onclick="confirmDeleteSingle(<?php echo $accident['id']; ?>, '<?php echo htmlspecialchars(addslashes($accident['caseNumber'] ?? 'ID#' . $accident['id'])); ?>')" title="Διαγραφή Εγγραφής">🗑️ Διαγραφή</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+
+                            <!-- Bulk Action Modal -->
+                            <div id="bulk-action-modal" class="modal">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h3>Μαζικές Ενέργειες</h3>
+                                        <button class="close-modal" onclick="closeModal('bulk-action-modal')">&times;</button>
+                                    </div>
+
+                                    <div class="modal-body">
+                                        <form id="bulk-action-form">
+                                            <div class="form-group">
+                                                <label for="bulk-action-type">Επιλέξτε Ενέργεια</label>
+                                                <select id="bulk-action-type" name="action_type" required onchange="toggleBulkActionOptions()">
+                                                    <option value="">Επιλέξτε ενέργεια...</option>
+                                                    <option value="change_status">Αλλαγή Κατάστασης</option>
+                                                    <option value="assign_expert">Ανάθεση σε Εμπειρογνώμονα</option>
+                                                    <option value="export_selected">Εξαγωγή Επιλεγμένων</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group" id="status-options" style="display: none;">
+                                                <label for="new-status">Νέα Κατάσταση</label>
+                                                <select id="new-status" name="new_status">
+                                                    <option value="draft">Πρόχειρο</option>
+                                                    <option value="complete">Ολοκληρώθηκε</option>
+                                                    <option value="under_review">Υπό Αξιολόγηση</option>
+                                                    <option value="flagged">Σημειωμένο</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group" id="expert-options" style="display: none;">
+                                                <label for="expert-assignment">Εμπειρογνώμονας</label>
+                                                <select id="expert-assignment" name="expert_id">
+                                                    <option value="">Επιλέξτε εμπειρογνώμονα...</option>
+                                                    <?php
+                                                    $stmt = $db->prepare("SELECT id, username FROM users WHERE role = 'expert' AND is_active = 1 ORDER BY username");
+                                                    $stmt->execute();
+                                                    $experts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                                    foreach ($experts as $expert):
+                                                        ?>
+                                                        <option value="<?php echo $expert['id']; ?>"><?php echo htmlspecialchars($expert['username']); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="bulk-action-reason">Σχόλια/Λόγος (Προαιρετικό)</label>
+                                                <textarea id="bulk-action-reason" name="reason" placeholder="Εισάγετε τον λόγο για αυτή την ενέργεια..."></textarea>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" onclick="closeModal('bulk-action-modal')">Ακύρωση</button>
+                                        <button type="submit" form="bulk-action-form" class="btn btn-primary">Εφαρμογή Ενέργειας</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <div style="text-align: center; padding: 3rem; color: #7f8c8d;">
+                            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.3;">📋</div>
+                            <h3>Δεν βρέθηκαν εγγραφές ατυχημάτων</h3>
+                            <p>Δεν υπάρχουν εγγραφές ατυχημάτων στο σύστημα</p>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div id="users" class="tab-pane">
                 <div class="action-buttons">
                     <a href="../admin/users/list.php" class="btn btn-primary">
-                        👥 Πλήρης Διαχείριση Χρηστών
+                        Πλήρης Διαχείριση Χρηστών
                     </a>
                     <button class="btn btn-success btn-outline">Εξαγωγή Λίστας Χρηστών</button>
                 </div>
@@ -773,6 +1116,7 @@ try {
                         </th>
                         </tr>
                         </thead>
+                        </tbody>
                         <tbody>
 
             <div id="accidents" class="tab-pane">
@@ -902,6 +1246,7 @@ try {
         checkboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
         });
+        updateSelectedCount();
     });
 
     // Form submission for system settings
@@ -938,6 +1283,192 @@ try {
             })
             .catch(error => console.error('Error fetching stats:', error));
     }, 60000);
+
+    // Accident tab specific functions
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('input[name="accident-select"]:checked');
+        const count = checkboxes.length;
+        document.getElementById('selected-count').textContent = count;
+        document.getElementById('bulk-delete-btn').disabled = count === 0;
+    }
+
+    function deleteSelected() {
+        const checkboxes = document.querySelectorAll('input[name="accident-select"]:checked');
+        if (checkboxes.length === 0) {
+            alert('Παρακαλώ επιλέξτε τουλάχιστον μία εγγραφή για διαγραφή.');
+            return;
+        }
+
+        const count = checkboxes.length;
+        if (confirm(`ΠΡΟΣΟΧΗ: Θα διαγραφούν ΜΟΝΙΜΑ ${count} εγγραφές ατυχημάτων και όλα τα σχετικά δεδομένα τους. Αυτή η ενέργεια ΔΕΝ ΜΠΟΡΕΙ να αναιρεθεί.\n\nΕίστε απόλυτα σίγουροι;`)) {
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+
+            // Send bulk delete request
+            fetch('../admin/bulk_delete_accidents.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ accident_ids: ids })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Διαγράφηκαν επιτυχώς ${data.deleted_count} εγγραφές!`);
+                        location.reload();
+                    } else {
+                        alert('Σφάλμα: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Παρουσιάστηκε σφάλμα κατά τη διαγραφή.');
+                    console.error('Error:', error);
+                });
+        }
+    }
+
+    function confirmDeleteSingle(accidentId, identifier) {
+        if (confirm(`Θέλετε να διαγράψετε την εγγραφή "${identifier}"?\n\nΑυτή η ενέργεια θα διαγράψει ΜΟΝΙΜΑ την εγγραφή και όλα τα σχετικά δεδομένα.`)) {
+            window.location.href = `../accidents/delete.php?id=${accidentId}`;
+        }
+    }
+
+    function exportAccidents() {
+        const checkboxes = document.querySelectorAll('input[name="accident-select"]:checked');
+        if (checkboxes.length === 0) {
+            // Export all visible accidents
+            if (confirm('Θα εξαχθούν όλες οι εμφανιζόμενες εγγραφές. Συνεχίζετε;')) {
+                window.open('../admin/export_accidents.php', '_blank');
+            }
+        } else {
+            // Export selected accidents
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const url = '../admin/export_accidents.php?ids=' + ids.join(',');
+            window.open(url, '_blank');
+        }
+    }
+
+    function showStatistics() {
+        alert('Η λειτουργία των στατιστικών θα υλοποιηθεί σύντομα.');
+    }
+
+    function applyAccidentFilters() {
+        const statusFilter = document.getElementById('accident-status-filter').value;
+        const registrarFilter = document.getElementById('registrar-filter').value;
+        const dateFromFilter = document.getElementById('accident-date-from').value;
+        const dateToFilter = document.getElementById('accident-date-to').value;
+        const searchFilter = document.getElementById('accident-search').value.toLowerCase();
+
+        const rows = document.querySelectorAll('#accidents-table tbody tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            let showRow = true;
+
+            // Status filter
+            if (statusFilter && row.dataset.status !== statusFilter) {
+                showRow = false;
+            }
+
+            // Registrar filter
+            if (registrarFilter && row.dataset.registrar !== registrarFilter) {
+                showRow = false;
+            }
+
+            // Search filter
+            if (searchFilter && !row.textContent.toLowerCase().includes(searchFilter)) {
+                showRow = false;
+            }
+
+            // Date filters
+            if (dateFromFilter) {
+                const accidentDate = new Date(row.dataset.date);
+                const fromDate = new Date(dateFromFilter);
+                if (accidentDate < fromDate) showRow = false;
+            }
+
+            if (dateToFilter) {
+                const accidentDate = new Date(row.dataset.date);
+                const toDate = new Date(dateToFilter);
+                if (accidentDate > toDate) showRow = false;
+            }
+
+            row.style.display = showRow ? '' : 'none';
+            if (showRow) visibleCount++;
+        });
+
+        // Show results count
+        const resultsInfo = document.createElement('div');
+        resultsInfo.id = 'filter-results';
+        resultsInfo.style.cssText = 'margin: 1rem 0; padding: 0.5rem; background-color: #e8f4fd; border-left: 4px solid #3498db; color: #2c3e50; font-weight: 500;';
+        resultsInfo.innerHTML = `Εμφανίζονται ${visibleCount} από ${rows.length} εγγραφές`;
+
+        // Remove existing results info
+        const existingInfo = document.getElementById('filter-results');
+        if (existingInfo) existingInfo.remove();
+
+        // Add new results info
+        const tableContainer = document.querySelector('#accidents .table-container');
+        tableContainer.parentNode.insertBefore(resultsInfo, tableContainer);
+    }
+
+    function toggleBulkActionOptions() {
+        const actionType = document.getElementById('bulk-action-type').value;
+        const statusOptions = document.getElementById('status-options');
+        const expertOptions = document.getElementById('expert-options');
+
+        statusOptions.style.display = actionType === 'change_status' ? 'block' : 'none';
+        expertOptions.style.display = actionType === 'assign_expert' ? 'block' : 'none';
+    }
+
+    // Update the existing select-all checkbox functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllAccidents = document.getElementById('select-all-accidents');
+        if (selectAllAccidents) {
+            selectAllAccidents.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[name="accident-select"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateSelectedCount();
+            });
+        }
+    });
+
+    // Add bulk action form submission
+    document.getElementById('bulk-action-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const selectedCheckboxes = document.querySelectorAll('input[name="accident-select"]:checked');
+        if (selectedCheckboxes.length === 0) {
+            alert('Παρακαλώ επιλέξτε τουλάχιστον μία εγγραφή.');
+            return;
+        }
+
+        const formData = new FormData(this);
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        formData.append('accident_ids', JSON.stringify(selectedIds));
+
+        fetch('../admin/bulk_accident_actions.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Η μαζική ενέργεια ολοκληρώθηκε επιτυχώς!');
+                    closeModal('bulk-action-modal');
+                    location.reload();
+                } else {
+                    alert('Σφάλμα: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Παρουσιάστηκε σφάλμα κατά την εκτέλεση της μαζικής ενέργειας.');
+                console.error('Error:', error);
+            });
+    });
+
 </script>
 </body>
 </html>

@@ -23,15 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? 'save';
         $accident_id = $_POST['accident_id'] ?? null;
 
-        if ($action === 'save_draft' || $action === 'submit') {
-
+        if ($action === 'save' || $action === 'submit') {
             // Process Accident Data
             $accident_data = [
                 'user_id' => $user_id,
                 'caseNumber' => sanitizeInput($_POST['caseNumber'] ?? ''),
                 'accidentSeverity_id' => $_POST['accidentSeverity_id'] ?? null,
                 'accidentAbandonedVictim_id' => $_POST['accidentAbandonedVictim_id'] ?? null,
-                'accidentGADAS_id' => $_POST['accidentGADAS_id'] ?? null,
                 'accidentAlcohol_id' => $_POST['accidentAlcohol_id'] ?? null,
                 'accidentDate' => $_POST['accidentDate'] ?? null,
                 'accidentDay' => $_POST['accidentDay'] ?? null,
@@ -42,18 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'accidentNarcotics_id' => $_POST['accidentNarcotics_id'] ?? null,
                 'accidentAnimalCollision_id' => $_POST['accidentAnimalCollision_id'] ?? null,
                 'accidentEventsNumber' => $_POST['accidentEventsNumber'] ?? null,
-                'accidentGDV_id' => $_POST['accidentGDV_id'] ?? null,
                 'accidentSynopsis' => sanitizeInput($_POST['accidentSynopsis'] ?? ''),
                 'accidentEventSequence' => sanitizeInput($_POST['accidentEventSequence'] ?? ''),
                 'accidentFirstCollisionEvent_id' => $_POST['accidentFirstCollisionEvent_id'] ?? null,
                 'accidentMostHarmfulEvent_id' => $_POST['accidentMostHarmfulEvent_id'] ?? null,
-                'accidentRelatedFactors' => $_POST['accidentRelatedFactors'] ?? null,
-                'accidentInformationSource_id' => $_POST['accidentInformationSource_id'] ?? null,
-                'accidentISTrustLevel_id' => $_POST['accidentISTrustLevel_id'] ?? null,
-                'accidentISTLDescription' => sanitizeInput($_POST['accidentISTLDescription'] ?? ''),
-                'accidentInvestigationMethod_id' => $_POST['accidentInvestigationMethod_id'] ?? null,
-                'accidentIMTrustLevel_id' => $_POST['accidentIMTrustLevel_id'] ?? null,
-                'accidentIMTLDescription' => sanitizeInput($_POST['accidentIMTLDescription'] ?? ''),
+                'accidentRelatedFactors' => sanitizeInput($_POST['accidentRelatedFactors'] ?? ''),
                 'accidentTotalVehicles' => $_POST['accidentTotalVehicles'] ?? null,
                 'accidentVehicleSedan' => $_POST['accidentVehicleSedan'] ?? 0,
                 'accidentVehicleVan' => $_POST['accidentVehicleVan'] ?? 0,
@@ -77,8 +68,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'accidentVehicleOther' => $_POST['accidentVehicleOther'] ?? 0,
                 'accidentVehicleUnknown' => $_POST['accidentVehicleUnknown'] ?? 0,
                 'status' => $action === 'submit' ? 'complete' : 'draft',
-                'step_completed' => $_POST['current_step'] ?? 1
+                'step_completed' => $_POST['current_step'] ?? 1,
+                'location' => sanitizeInput($_POST['location'] ?? ''),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ];
+
+            // Validate required fields
+            $validation_errors = validateAccidentData($accident_data);
+            if (!empty($validation_errors)) {
+                throw new Exception('Σφάλματα επικύρωσης: ' . implode(', ', $validation_errors));
+            }
 
             if ($accident_id) {
                 // Update existing accident
@@ -112,27 +112,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $action_text = $action === 'submit' ? 'submitted' : 'saved draft for';
             logActivity($db, $user_id, "Accident record {$action_text}", "Accident ID: {$accident_id}");
 
+            // Determine redirect URL based on user role
+            $redirect_url = '../dashboard/' . $_SESSION['role'] . '.php';
+            if ($action === 'submit') {
+                $redirect_url .= '?success=accident_submitted';
+            } else {
+                $redirect_url .= '?success=draft_saved';
+            }
+
             echo json_encode([
                 'success' => true,
-                'message' => $action === 'submit' ? 'Accident record submitted successfully!' : 'Draft saved successfully!',
-                'accident_id' => $accident_id
+                'message' => $action === 'submit' ? 'Η εγγραφή ατυχήματος υποβλήθηκε επιτυχώς!' : 'Το πρόχειρο αποθηκεύτηκε επιτυχώς!',
+                'accident_id' => $accident_id,
+                'redirect' => $redirect_url
             ]);
 
         } else {
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            echo json_encode(['success' => false, 'message' => 'Μη έγκυρη ενέργεια']);
         }
 
     } catch (Exception $e) {
         $db->rollBack();
         error_log("Accident form processing error: " . $e->getMessage());
-        echo json_encode(['success' => false, 'message' => 'An error occurred while processing the form.']);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Παρουσιάστηκε σφάλμα κατά την επεξεργασία της φόρμας: ' . $e->getMessage()
+        ]);
     }
 } else {
-    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+    echo json_encode(['success' => false, 'message' => 'Μη έγκυρη μέθοδος αιτήματος']);
 }
 
 function createAccident($db, $data) {
-    $sql = "INSERT INTO accidents (" . implode(', ', array_keys($data)) . ") VALUES (:" . implode(', :', array_keys($data)) . ")";
+    $fields = array_keys($data);
+    $placeholders = ':' . implode(', :', $fields);
+
+    $sql = "INSERT INTO accidents (" . implode(', ', $fields) . ") VALUES (" . $placeholders . ")";
     $stmt = $db->prepare($sql);
 
     foreach ($data as $key => $value) {
@@ -150,6 +165,7 @@ function updateAccident($db, $accident_id, $data, $user_id) {
     }
 
     unset($data['user_id']); // Don't update user_id
+    unset($data['created_at']); // Don't update created_at
     $data['updated_at'] = date('Y-m-d H:i:s');
 
     $set_clauses = [];
@@ -179,22 +195,20 @@ function processVehicles($db, $accident_id, $vehicles_data, $user_id) {
 
         $vehicle_data['accident_id'] = $accident_id;
         $vehicle_data['user_id'] = $user_id;
+        $vehicle_data['created_at'] = date('Y-m-d H:i:s');
+        $vehicle_data['updated_at'] = date('Y-m-d H:i:s');
 
         // Clean and validate vehicle data
         $clean_vehicle_data = [];
         $vehicle_fields = [
             'accident_id', 'user_id', 'vehicleLicensePlate', 'vehicleColor_id', 'vehicleType_id',
             'vehicleManufacturer_id', 'vehicleModel_id', 'vehicleWheelDrive_id', 'vehicleDrivePosition_id',
-            'vehicleLength', 'vehicleWidth', 'vehicleRoadwayAlignment_id', 'vehicleTrailer_id',
-            'vehicleEnginePower', 'vehicleManufactureDate', 'vehicleTare', 'vehicleAxles',
+            'vehicleLength', 'vehicleWidth', 'vehicleEnginePower', 'vehicleManufactureDate', 'vehicleTare', 'vehicleAxles',
             'vehicleGeneralComments', 'vehicleOccupantsNumber', 'vehicleDamagePossibleFactor_id',
             'vehicleDPFComments', 'vehicleInspected_id', 'vehicleSwerved_id', 'vehicleDangerousCargo_id',
-            'vehicleScatteredDangerousCargo_id', 'vehicleCollisions', 'CDC3_id', 'CDC4_id',
-            'vehicleOnFire_id', 'vehicleFirefightingEquipmentUsed_id', 'vehicleCollisionOffroadObject_id',
-            'vehicleCollisionType_id', 'ABS_id', 'ESP_id', 'TCS_id', 'ACS_id', 'LDW_id', 'CSS_id',
-            'vehicleElectronicsComments', 'vehicleInformationSource_id', 'vehicleISTrustLevel_id',
-            'vehicleISTLDescription', 'vehicleInvestigationMethod_id', 'vehicleIMTrustLevel_id',
-            'vehicleIMTLDescription'
+            'vehicleScatteredDangerousCargo_id', 'vehicleCollisions', 'vehicleOnFire_id',
+            'vehicleFirefightingEquipmentUsed_id', 'ABS_id', 'ESP_id', 'TCS_id',
+            'vehicleElectronicsComments', 'created_at', 'updated_at'
         ];
 
         foreach ($vehicle_fields as $field) {
@@ -202,7 +216,16 @@ function processVehicles($db, $accident_id, $vehicles_data, $user_id) {
                 (is_string($vehicle_data[$field]) ? sanitizeInput($vehicle_data[$field]) : $vehicle_data[$field]) : null;
         }
 
-        $sql = "INSERT INTO vehicles (" . implode(', ', array_keys($clean_vehicle_data)) . ") VALUES (:" . implode(', :', array_keys($clean_vehicle_data)) . ")";
+        // Validate vehicle data
+        $vehicle_errors = validateVehicleData($clean_vehicle_data);
+        if (!empty($vehicle_errors)) {
+            throw new Exception('Σφάλματα οχήματος: ' . implode(', ', $vehicle_errors));
+        }
+
+        $fields = array_keys($clean_vehicle_data);
+        $placeholders = ':' . implode(', :', $fields);
+
+        $sql = "INSERT INTO vehicles (" . implode(', ', $fields) . ") VALUES (" . $placeholders . ")";
         $stmt = $db->prepare($sql);
 
         foreach ($clean_vehicle_data as $key => $value) {
@@ -254,10 +277,21 @@ function processRoadData($db, $accident_id, $post_data, $user_id) {
         'roadInvestigationMethod_id' => $post_data['roadInvestigationMethod_id'] ?? null,
         'roadIMTrustLevel_id' => $post_data['roadIMTrustLevel_id'] ?? null,
         'roadIMTLDescription' => sanitizeInput($post_data['roadIMTLDescription'] ?? ''),
-        'images' => null // Will be updated separately
+        'images' => null, // Will be updated separately
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s')
     ];
 
-    $sql = "INSERT INTO roads (" . implode(', ', array_keys($road_data)) . ") VALUES (:" . implode(', :', array_keys($road_data)) . ")";
+    // Validate road data
+    $road_errors = validateRoadData($road_data);
+    if (!empty($road_errors)) {
+        throw new Exception('Σφάλματα οδοστρώματος: ' . implode(', ', $road_errors));
+    }
+
+    $fields = array_keys($road_data);
+    $placeholders = ':' . implode(', :', $fields);
+
+    $sql = "INSERT INTO roads (" . implode(', ', $fields) . ") VALUES (" . $placeholders . ")";
     $stmt = $db->prepare($sql);
 
     foreach ($road_data as $key => $value) {
@@ -272,7 +306,9 @@ function handleImageUploads($files, $accident_id) {
 
     // Create directory if it doesn't exist
     if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
+        if (!mkdir($upload_dir, 0755, true)) {
+            throw new Exception('Αδυναμία δημιουργίας φακέλου για αρχεία');
+        }
     }
 
     $uploaded_files = [];
@@ -283,22 +319,27 @@ function handleImageUploads($files, $accident_id) {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
             $file_type = $files['type'][$i];
             $file_size = $files['size'][$i];
+            $original_name = $files['name'][$i];
 
             if (!in_array($file_type, $allowed_types)) {
-                continue; // Skip non-image files
+                throw new Exception("Το αρχείο '{$original_name}' δεν είναι υποστηριζόμενος τύπος εικόνας");
             }
 
             if ($file_size > $max_size) {
-                continue; // Skip files that are too large
+                throw new Exception("Το αρχείο '{$original_name}' είναι πολύ μεγάλο (μέγιστο: 5MB)");
             }
 
-            $file_extension = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
-            $new_filename = uniqid('img_') . '.' . $file_extension;
+            $file_extension = pathinfo($original_name, PATHINFO_EXTENSION);
+            $new_filename = uniqid('img_') . '.' . strtolower($file_extension);
             $file_path = $upload_dir . $new_filename;
 
             if (move_uploaded_file($files['tmp_name'][$i], $file_path)) {
                 $uploaded_files[] = "accidents/{$accident_id}/{$new_filename}";
+            } else {
+                throw new Exception("Αποτυχία μεταφοράς αρχείου: {$original_name}");
             }
+        } elseif ($files['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+            throw new Exception("Σφάλμα μεταφόρτωσης αρχείου: " . $files['error'][$i]);
         }
     }
 
@@ -318,20 +359,34 @@ function getAccidentUserId($db, $accident_id) {
     return $result ? $result['user_id'] : null;
 }
 
-// Additional validation functions
+// Validation functions
 function validateAccidentData($data) {
     $errors = [];
 
+    if (empty($data['caseNumber'])) {
+        $errors[] = 'Ο αριθμός υπόθεσης είναι υποχρεωτικός';
+    }
+
     if (empty($data['accidentDate'])) {
-        $errors[] = 'Accident date is required';
+        $errors[] = 'Η ημερομηνία ατυχήματος είναι υποχρεωτική';
     }
 
     if (empty($data['accidentDay'])) {
-        $errors[] = 'Day of week is required';
+        $errors[] = 'Η ημέρα εβδομάδας είναι υποχρεωτική';
+    }
+
+    if (empty($data['location'])) {
+        $errors[] = 'Η τοποθεσία είναι υποχρεωτική';
+    } elseif (strlen($data['location']) < 10) {
+        $errors[] = 'Η περιγραφή τοποθεσίας πρέπει να είναι τουλάχιστον 10 χαρακτήρες';
+    }
+
+    if (empty($data['accidentSeverity_id'])) {
+        $errors[] = 'Η σοβαρότητα ατυχήματος είναι υποχρεωτική';
     }
 
     if (!empty($data['accidentTotalVehicles']) && $data['accidentTotalVehicles'] < 1) {
-        $errors[] = 'Total vehicles must be at least 1';
+        $errors[] = 'Ο συνολικός αριθμός οχημάτων πρέπει να είναι τουλάχιστον 1';
     }
 
     return $errors;
@@ -341,11 +396,18 @@ function validateVehicleData($vehicle_data) {
     $errors = [];
 
     if (empty($vehicle_data['vehicleType_id'])) {
-        $errors[] = 'Το πεδίο "Τύπος Οχήματος" είναι υποχρεωτικό!';
+        $errors[] = 'Ο τύπος οχήματος είναι υποχρεωτικός';
     }
 
     if (!empty($vehicle_data['vehicleOccupantsNumber']) && $vehicle_data['vehicleOccupantsNumber'] < 0) {
-        $errors[] = 'Ο αριθμός επιβαινόντνων δε μπορεί να είναι αρνητικός!';
+        $errors[] = 'Ο αριθμός επιβαινόντων δεν μπορεί να είναι αρνητικός';
+    }
+
+    if (!empty($vehicle_data['vehicleManufactureDate'])) {
+        $year = intval($vehicle_data['vehicleManufactureDate']);
+        if ($year < 1950 || $year > date('Y')) {
+            $errors[] = 'Το έτος κατασκευής δεν είναι έγκυρο';
+        }
     }
 
     return $errors;
@@ -355,20 +417,32 @@ function validateRoadData($data) {
     $errors = [];
 
     if (empty($data['roadType_id'])) {
-        $errors[] = 'Το πεδίο "Τύπος Οδοστρώματος" είναι υποχρεωτικό!';
+        $errors[] = 'Ο τύπος οδοστρώματος είναι υποχρεωτικός';
+    }
+
+    if (empty($data['roadSurface_id'])) {
+        $errors[] = 'Η επιφάνεια οδοστρώματος είναι υποχρεωτική';
     }
 
     if (empty($data['roadLightConditions_id'])) {
-        $errors[] = 'Το πεδίο "Φωτισμός" είναι υποχρεωτικό!';
+        $errors[] = 'Οι συνθήκες φωτισμού είναι υποχρεωτικές';
     }
 
     if (empty($data['roadWeatherConditions_id'])) {
-        $errors[] = 'Το πεδίο "Καιρικές Συνθήκες" είναι υποχρεωτικό!';
+        $errors[] = 'Οι καιρικές συνθήκες είναι υποχρεωτικές';
     }
 
     if (!empty($data['roadSpeedLimit'])) {
-        if ($data['roadSpeedLimit'] < 10 || $data['roadSpeedLimit'] > 200) {
+        $speed = intval($data['roadSpeedLimit']);
+        if ($speed < 10 || $speed > 200) {
             $errors[] = 'Το όριο ταχύτητας πρέπει να είναι μεταξύ 10 και 200 χλμ/ω';
+        }
+    }
+
+    if (!empty($data['roadLaneNumber'])) {
+        $lanes = intval($data['roadLaneNumber']);
+        if ($lanes < 1 || $lanes > 8) {
+            $errors[] = 'Ο αριθμός λωρίδων πρέπει να είναι μεταξύ 1 και 8';
         }
     }
 
